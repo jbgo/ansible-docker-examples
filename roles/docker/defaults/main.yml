@@ -1,0 +1,10 @@
+docker_opts: ''
+docker_users: []
+
+# As of ansible v1.9.1, the docker module uses an older version of the docker-py python package.
+# https://github.com/ansible/ansible-modules-core/issues/1227
+docker_py_version: 1.1.0
+
+docker_pkg: lxc-docker
+docker_apt_key_url: http://get.docker.io/gpg
+docker_apt_repo: deb http://get.docker.io/ubuntu docker main

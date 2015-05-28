@@ -1,0 +1,25 @@
+---
+- name: Build and run the ruby app
+  hosts: docker
+
+  vars:
+    docker_users:
+      - vagrant
+
+    pg_container: shoutouts_postgres
+    pg_database: shoutouts
+    pg_user: shoutouts_web
+    pg_password: secret
+
+    app_port: 5000
+    app_src_path: ./ruby-app
+    app_container: shoutouts_web
+    app_docker_image: jbgo/shoutouts
+    app_docker_image_tag: latest
+    app_docker_links:
+      - "{{pg_container}}:postgres"
+  roles:
+    - { role: docker, sudo: yes, tags: docker }
+    - { role: docker-postgres, tags: db }
+    - { role: ruby-app, tags: web }
+    - { role: docker-nginx, tags: proxy }

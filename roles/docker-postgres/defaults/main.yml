@@ -1,0 +1,6 @@
+pg_container: CHANGEME
+pg_database: CHANGEME
+pg_user: CHANGEME
+pg_password: CHANGEME
+
+pg_admin_password: CHANGEME_to_something_long_and_secret

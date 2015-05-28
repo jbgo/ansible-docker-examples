@@ -1,0 +1,4 @@
+ # I can't use the service module because of an issue with ansible and upstart :(
+    # https://github.com/ansible/ansible-modules-core/issues/1170
+- name: restart docker
+  command: service docker restart

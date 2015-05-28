@@ -1,0 +1,20 @@
+- name: copy app src to build server
+  synchronize: src={{app_src_path}} dest=/tmp
+
+- name: copy nginx dir tobuild server
+  synchronize: src=./nginx dest=/tmp
+
+- name: generate the docker compose file
+  template: src=docker-compose.yml.j2 dest=/tmp/docker-compose.yml
+
+- name: start your app
+  command: docker-compose up -d chdir=/tmp
+
+- name: setup up the app's database
+  include: postgres.yml
+
+- name: scale the app
+  debug: msg=TODO
+
+- name: reconfigure the load balancer
+  debug: msg=TODO

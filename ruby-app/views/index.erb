@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Shout-outs!</title>
+  </head>
+  <body>
+
+    <h1>Shout-outs!</h1>
+    <p>Praise your friends in front of the entire internet.</p>
+
+    <div>
+      <h3>Leave a shout-out for someone</h3>
+      <form action="/shoutouts" method="post">
+        <% if @errors.any? %>
+          <ul style="color: red">
+            <% @errors.each do |err| %>
+              <li><%= err %></li>
+              <% end %>
+          </ul>
+        <% end %>
+
+        <p>
+          <label for="your_name">Your name:</label><br>
+          <input id="your_name" name="name" type="text" placeholder="What is your name?">
+        </p>
+        <p>
+          <label for="exclamation">Give someone a shoutout:</label><br>
+          <textarea id="exclamation" name="exclamation" placeholder="What would you like to say?" rows=3 cols=40></textarea>
+        </p>
+        <p>
+          <input type="submit" value="submit">
+        </p>
+      </form>
+    </div>
+
+    <div class="shout-outs">
+      <% @shoutouts.each do |s| %>
+        <div class="shout-out">
+          <h4><%= h s[:name] %> say:</h4>
+          <blockquote><%= h s[:exclamation] %></blockquote>
+        </div>
+      <% end %>
+    </div>
+
+  
+  </body>
+</html>

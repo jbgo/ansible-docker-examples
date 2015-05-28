@@ -1,0 +1,30 @@
+- name: add docker apt key
+  apt_key: >
+    url={{docker_apt_key_url}}
+    state=present
+
+- name: add docker apt repository
+  apt_repository: >
+    repo="{{docker_apt_repo}}"
+    state=present
+    update_cache=yes
+
+- name: install docker
+  apt: pkg={{docker_pkg}} state=latest
+
+- name: configure docker
+  copy: content='DOCKER_OPTS="{{docker_opts}}"'
+    dest=/etc/default/docker
+  notify: restart docker
+
+- name: allow users to run docker commands without sudo
+  user: name={{item}} append=yes groups=docker
+  with_items: docker_users
+
+- name: install required python packages for ansible and docker
+  apt: pkg={{item}} state=latest
+  with_items: [python-pip, python-dev]
+
+# TODO why is this module failing when I re-run this role?
+- name: install the version of docker-py used by ansible
+  pip: name=docker-py version={{docker_py_version}} state=present

@@ -1,0 +1,34 @@
+- name: convenience function for running psql in the psotgres container
+  set_fact:
+    psql_command: docker exec {{pg_container}} gosu postgres psql -h localhost
+
+- name: install and run postgres
+  docker:
+    state: reloaded
+    image: postgres
+    name: "{{pg_container}}"
+  register: postgres_container
+
+- debug: var=postgres_container
+
+- name: wait for postgres to begin accepting connection
+  command: sleep 2
+  when: postgres_container.changed
+
+- name: check if the app's database exists
+  command: "{{psql_command}} {{pg_database}} -c ''"
+  ignore_errors: yes
+  register: db_exists
+
+- name: create the app's database if it does not exist
+  command: "{{psql_command}} -c \"create database {{pg_database}}\""
+  when: db_exists.rc != 0
+
+- name: check if the app's role exists
+  shell: "{{psql_command}} -c \"select rolname from pg_roles\" | grep shoutouts_web"
+  ignore_errors: yes
+  register: role_exists
+
+- name: create the app's role if it does not exist
+  command: "{{psql_command}} -c \"create role {{pg_user}} with nosuperuser nocreatedb login encrypted password '{{pg_password}}';\""
+  when: role_exists.rc != 0

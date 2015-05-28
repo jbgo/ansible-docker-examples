@@ -1,0 +1,51 @@
+# NOTE - I found a docker_facts module that is worth investigating:
+# https://github.com/CaptTofu/ansible/commit/257ce99a3b554aa178e53477b9004b2002cfa0c2
+# It does the same thing, but saves you a task.
+# TODO - find out how to distribute ansible modules
+- name: get docker inspect output for all of the ruby app containers
+  shell: "docker inspect $(docker ps | grep '{{app_container}}' | cut -d ' ' -f 1)"
+  register: docker_inspect
+
+- name: make the docker inspect results available as a fact
+  set_fact:
+    app_containers: "{{docker_inspect.stdout|from_json}}"
+
+# NOTE - now we can access are container metadata
+- debug: var=app_containers
+
+- name: create a temporary build directory
+  file: dest=/tmp/docker-nginx-build state=directory
+
+- name: generate nginx config for the app
+  template: src=nginx-app.conf.j2 dest=/tmp/docker-nginx-build/app.conf
+
+- name: copy the dockerfile
+  template: src=Dockerfile dest=/tmp/docker-nginx-build/Dockerfile
+
+- name: build image
+  command: docker build -t shoutouts_nginx:latest /tmp/docker-nginx-build
+
+- name: wipeout the temporary build directory
+  file: dest=/tmp/docker-nginx-build state=absent
+
+# NOTE The next two tasks generate a list of links in the form of app_container_N:webN
+# It is based on this stack overflow answer:
+# http://stackoverflow.com/a/29817564/148586
+- set_fact:
+    link: "{{item.Name|replace('/', '')}}:web{{item.Name|list|last}}"
+  with_items: app_containers
+  register: link_result
+
+- set_fact:
+    app_links: "{{link_result.results|map(attribute='ansible_facts.link')|list}}"
+- debug: var=app_links
+
+
+- name: run nginx
+  docker:
+    image: shoutouts_nginx
+    name: shoutouts_proxy
+    state: reloaded
+    ports:
+      - "80:80"
+    links: "{{app_links}}"

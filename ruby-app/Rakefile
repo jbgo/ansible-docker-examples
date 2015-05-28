@@ -1,0 +1,15 @@
+require "rubygems"
+require "bundler/setup"
+require "sequel"
+
+namespace :db do
+  desc "create DB schema and seed data"
+  task :migrate do
+    require 'sequel'
+    require './app'
+    Sequel.extension :migration
+    puts "running sequel migrations"
+    Sequel::Migrator.run DB, File.join(File.dirname(__FILE__), 'migrations')
+  end
+end
+
