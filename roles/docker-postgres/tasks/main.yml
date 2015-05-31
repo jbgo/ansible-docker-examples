@@ -2,14 +2,19 @@
   set_fact:
     psql_command: docker exec {{pg_container}} gosu postgres psql -h localhost
 
+- name: create a data-only container for postgres
+  docker:
+    state: present
+    name: postgres_data
+    image: postgres
+
 - name: install and run postgres
   docker:
     state: reloaded
-    image: postgres
     name: "{{pg_container}}"
+    image: postgres
+    volumes_from: postgres_data
   register: postgres_container
-
-- debug: var=postgres_container
 
 - name: wait for postgres to begin accepting connection
   command: sleep 2
