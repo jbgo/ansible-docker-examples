@@ -4,6 +4,7 @@
 # TODO - find out how to distribute ansible modules
 - name: get docker inspect output for all of the ruby app containers
   shell: "docker inspect $(docker ps | grep '{{app_container}}' | cut -d ' ' -f 1)"
+  environment: docker_env
   register: docker_inspect
 
 - name: make the docker inspect results available as a fact
@@ -24,6 +25,7 @@
 
 - name: build image
   command: docker build -t shoutouts_nginx:latest /tmp/docker-nginx-build
+  environment: docker_env
 
 - name: wipeout the temporary build directory
   file: dest=/tmp/docker-nginx-build state=absent
@@ -40,7 +42,6 @@
     app_links: "{{link_result.results|map(attribute='ansible_facts.link')|list}}"
 - debug: var=app_links
 
-
 - name: run nginx
   docker:
     image: shoutouts_nginx
@@ -49,3 +50,5 @@
     ports:
       - "80:80"
     links: "{{app_links}}"
+    use_tls: encrypt
+  environment: docker_env

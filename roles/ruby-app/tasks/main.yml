@@ -7,6 +7,7 @@
 # The docker_image module is deprecated, so I'm using the docker build command directly.
 - name: build image
   command: 'docker build -t {{app_docker_image}}:{{app_docker_image_tag}} /tmp/{{app_src_path|basename}}'
+  environment: docker_env
 
 # I'm not using the docker module here because it doesn't fail when the container exits
 # with a non-zero exit status.
@@ -15,6 +16,7 @@
     --link={{app_docker_links|join(' --link=')}} 
     -e DB_NAME={{pg_database}} -e DB_USER={{pg_user}} -e DB_PASS={{pg_password}}
     {{app_docker_image}} rake db:migrate"
+  environment: docker_env
 
 - name: run the app
   docker:
@@ -27,6 +29,8 @@
       DB_NAME: "{{pg_database}}"
       DB_USER: "{{pg_user}}"
       DB_PASS: "{{pg_password}}"
+    use_tls: encrypt
+  environment: docker_env
   with_sequence: count=3
   # NOTE - I tried using the count option for the docker module, but it's mutually
   # exclusive with the name option. I think it would be better if you could specify
@@ -40,4 +44,6 @@
 #     name: "{{app_container}}_{{item}}"
 #     image: "{{app_docker_image}}"
 #     state: stopped
+#     use_tls: encrypt
+#   environment: docker_env
 #   with_sequence: start=4 end=5

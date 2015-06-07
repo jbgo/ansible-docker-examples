@@ -1,0 +1,100 @@
+# I'm following these instructions
+# https://docs.docker.com/articles/https/
+
+# Certificate Authority (CA)
+- name: create a CA private key
+  command: >
+    openssl genrsa -aes256 -passout "pass:{{docker_tls_ca_passphrase}}" -out ca-key.pem 4096
+    creates=ca-key.pem
+
+- name: generate CA public key
+  command: >
+    openssl req -new -x509 -days 365 -key ca-key.pem -sha256 -out ca.pem
+    -passin "pass:{{docker_tls_ca_passphrase}}" -subj "/CN={{docker_tls_ca_domain}}"
+    creates=ca.pem
+
+# Server
+- name: generate private key for docker server
+  command: >
+    openssl genrsa -out server-key.pem 4096
+    creates=server-key.pem
+
+- name: generate certificate signing request (CSR) for server key
+  command: >
+    openssl req  -sha256 -new -key server-key.pem -out server.csr -subj "/CN={{docker_tls_ca_domain}}"
+    creates=server.csr
+
+
+# TODO: what is this? do I need it?
+- name: write something to a file
+  copy:
+    dest: ./extfile-server.cnf
+    content: "subjectAltName = {{docker_tls_subject_alt_names}}"
+
+- name: sign the server public key with our CA
+  command: >
+    openssl x509 -req -days 365 -sha256 -in server.csr -CA ca.pem -CAkey ca-key.pem -extfile extfile-server.cnf
+    -CAcreateserial -out server-cert.pem -passin "pass:{{docker_tls_ca_passphrase}}"
+    creates=server-cert.pem
+
+# Client
+- name: create a private key for the docker client
+  command: >
+    openssl genrsa -out key.pem 4096
+    creates=key.pem
+
+- name: generate the CSR for the client
+  command: >
+    openssl req -subj '/CN=client' -new -key key.pem -out client.csr
+    creates=client.csr
+
+- name: create an extensions config file for the client
+  copy:
+    dest: ./extfile-client.cnf
+    content: "extendedKeyUsage = clientAuth"
+
+- name: sign the client's public key
+  command: >
+    openssl x509 -req -days 365 -sha256 -in client.csr -CA ca.pem -CAkey ca-key.pem
+    -CAcreateserial -out cert.pem -extfile extfile-client.cnf -passin "pass:{{docker_tls_ca_passphrase}}"
+    creates=cert.pem
+
+# Cleanup
+- name: set permissions on private keys
+  file: path={{item}} mode=0400 state=file
+  with_items:
+    - ca-key.pem
+    - server-key.pem
+    - key.pem
+
+- name: set permissions on public keys
+  file: path={{item}} mode=0444 state=file
+  with_items:
+    - ca.pem
+    - server-cert.pem
+    - cert.pem
+
+- name: download client cert
+  fetch: src={{item}} dest=./
+  with_items:
+    - ca.pem
+    - key.pem
+    - cert.pem
+
+- name: create a directory for the client certs
+  file: path=~/.docker state=directory
+  sudo: no
+
+- name: copy required certs to the client dir
+  command: cp {{item}} /home/vagrant/.docker/{{item}}
+  with_items:
+    - ca.pem
+    - key.pem
+    - cert.pem
+
+- name: set owner for required client certs
+  file: path=/home/vagrant/.docker/{{item}} state=file owner=vagrant
+  with_items:
+    - ca.pem
+    - key.pem
+    - cert.pem

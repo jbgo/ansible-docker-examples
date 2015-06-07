@@ -13,7 +13,8 @@
   apt: pkg={{docker_pkg}} state=latest
 
 - name: configure docker
-  copy: content='DOCKER_OPTS="{{docker_opts}}"'
+  copy: >
+    content='DOCKER_OPTS="{{docker_opts}}"'
     dest=/etc/default/docker
   notify: restart docker
 
@@ -25,6 +26,10 @@
   apt: pkg={{item}} state=latest
   with_items: [python-pip, python-dev]
 
-# TODO why is this module failing when I re-run this role?
+# More info on why this task is necessary:
+# https://github.com/ansible/ansible/issues/10810
+- name: Upgrade pip so pip module works correctly
+  command: easy_install -U pip
+
 - name: install the version of docker-py used by ansible
   pip: name=docker-py version={{docker_py_version}} state=present

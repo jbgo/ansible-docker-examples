@@ -7,6 +7,8 @@
     state: present
     name: postgres_data
     image: postgres
+    use_tls: encrypt
+  environment: docker_env
 
 - name: install and run postgres
   docker:
@@ -14,6 +16,8 @@
     name: "{{pg_container}}"
     image: postgres
     volumes_from: postgres_data
+    use_tls: encrypt
+  environment: docker_env
   register: postgres_container
 
 - name: wait for postgres to begin accepting connection
@@ -22,18 +26,22 @@
 
 - name: check if the app's database exists
   command: "{{psql_command}} {{pg_database}} -c ''"
+  environment: docker_env
   ignore_errors: yes
   register: db_exists
 
 - name: create the app's database if it does not exist
   command: "{{psql_command}} -c \"create database {{pg_database}}\""
+  environment: docker_env
   when: db_exists.rc != 0
 
 - name: check if the app's role exists
   shell: "{{psql_command}} -c \"select rolname from pg_roles\" | grep shoutouts_web"
+  environment: docker_env
   ignore_errors: yes
   register: role_exists
 
 - name: create the app's role if it does not exist
   command: "{{psql_command}} -c \"create role {{pg_user}} with nosuperuser nocreatedb login encrypted password '{{pg_password}}';\""
+  environment: docker_env
   when: role_exists.rc != 0

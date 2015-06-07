@@ -6,6 +6,19 @@
     docker_users:
       - vagrant
 
+    docker_tls_ca_passphrase: choose your own
+    docker_tls_ca_domain: docker
+    docker_tls_subject_alt_names: "IP:192.168.33.100,IP:10.0.2.15,IP:127.0.0.1"
+    # TODO can we figure out the appropriate value automatically?
+
+    docker_opts: >
+      --tlsverify --tlscacert=/home/vagrant/ca.pem --tlscert=/home/vagrant/server-cert.pem --tlskey=/home/vagrant/server-key.pem -H=0.0.0.0:2376
+
+    docker_env:
+      DOCKER_HOST: "tcp://127.0.0.1:2376"
+      DOCKER_TLS_VERIFY: 1
+      DOCKER_CERT_PATH: /home/vagrant/.docker
+
     pg_container: shoutouts_postgres
     pg_database: shoutouts
     pg_user: shoutouts_web
@@ -18,7 +31,12 @@
     app_docker_image_tag: latest
     app_docker_links:
       - "{{pg_container}}:postgres"
+
+  # vars_prompt:
+  #   docker_ca_passphrase: What is your Docker CA passphrase?
+
   roles:
+    - { role: docker-tls, sudo: yes, tags: docker-tls }
     - { role: docker, sudo: yes, tags: docker }
     - { role: docker-postgres, tags: db }
     - { role: ruby-app, tags: web }

@@ -1,0 +1,3 @@
+docker_tls_ca_passphrase: choose your own
+docker_tls_ca_domain: docker
+docker_tls_subject_alt_names: "IP:192.168.33.100,IP:127.0.0.1"
