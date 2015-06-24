@@ -10,7 +10,7 @@
     update_cache=yes
 
 - name: install docker
-  apt: pkg={{docker_pkg}} state=latest
+  apt: pkg={{docker_pkg}}-{{docker_version}} state=latest
 
 - name: configure docker
   copy: content='DOCKER_OPTS="{{docker_opts}}"'

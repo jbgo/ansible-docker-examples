@@ -1,5 +1,6 @@
 docker_opts: ''
 docker_users: []
+docker_version: 1.6.2
 
 # As of ansible v1.9.1, the docker module uses an older version of the docker-py python package.
 # https://github.com/ansible/ansible-modules-core/issues/1227
