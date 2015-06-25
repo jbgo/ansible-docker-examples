@@ -1,16 +1,11 @@
 ---
 - name: Build and run the ruby app
-  hosts: swarm-manager
+  hosts: postgres
   gather_facts: False
 
   vars:
-    docker_build_env:
-      DOCKER_HOST: "unix:///var/run/docker.sock"
     docker_env:
       DOCKER_HOST: "tcp://127.0.0.1:2375"
-    docker_swarm_env:
-      DOCKER_HOST: "tcp://127.0.0.1:2376"
-    docker_hub_repo: jbgo
 
     pg_container: shoutouts_postgres
     pg_database: shoutouts
@@ -18,13 +13,13 @@
     pg_password: secret
 
     app_port: 5000
-    app_name: shoutouts
     app_src_path: ./ruby-app
     app_container: shoutouts_web
+    app_docker_image: jbgo/shoutouts
+    app_docker_image_tag: latest
     app_docker_links:
       - "{{pg_container}}:postgres"
     app_instances: 12
 
   roles:
     - { role: docker-postgres, tags: db }
-    - { role: ruby-app, tags: web }

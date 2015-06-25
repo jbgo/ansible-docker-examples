@@ -1,0 +1,61 @@
+- name: get docker inspect output for all of the standby_environment ruby app containers
+  shell: "docker inspect $(docker ps | grep '{{app_container}}_{{standby_environment}}' | cut -d ' ' -f 1)"
+  environment: docker_env
+  register: docker_inspect
+  run_once: True
+
+- name: make the docker inspect results available as a fact
+  set_fact:
+    new_standby_containers: "{{docker_inspect.stdout|from_json}}"
+  run_once: True
+
+- name: create nginx build directory
+  file: path=/tmp/nginx_{{standby_environment}} state=directory
+  run_once: True
+
+- name: generate nginx config for the app
+  template: src=nginx.conf.j2 dest=/tmp/nginx_{{standby_environment}}/nginx.conf
+  run_once: True
+
+- name: copy the nginx dockerfile
+  template: src=Dockerfile-nginx.j2 dest=/tmp/nginx_{{standby_environment}}/Dockerfile
+  run_once: True
+
+- name: build nginx image
+  command: docker build -t nginx_{{standby_environment}}:latest /tmp/nginx_{{standby_environment}}
+  environment: docker_env
+  run_once: True
+
+# NOTE The next two tasks generate a list of links in the form of app_container_N:webN
+# It is based on this stack overflow answer:
+# http://stackoverflow.com/a/29817564/148586
+- set_fact:
+    link: "{{item.Name|replace('/', '')}}:web{{item.Name|list|last}}"
+  with_items: new_standby_containers
+  register: link_result
+  run_once: True
+
+- set_fact:
+    app_links: "{{link_result.results|map(attribute='ansible_facts.link')|list}}"
+  run_once: True
+- debug: var=app_links
+
+- name: run nginx
+  docker:
+    image: nginx_{{standby_environment}}
+    name: nginx_{{standby_environment}}
+    state: reloaded
+    ports:
+      - "80:80"
+    links: "{{app_links}}"
+  environment: docker_env
+  run_once: True
+
+- name: send test request to load balancer
+  debug: msg=TODO
+
+- name: update DNS to point to new load balancer
+  debug: msg=TODO
+
+- name: save deployment facts for next deploy
+  debug: msg=TODO

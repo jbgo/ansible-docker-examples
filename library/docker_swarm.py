@@ -363,6 +363,7 @@ EXAMPLES = '''
 
 HAS_DOCKER_PY = True
 
+from pprint import pprint
 import sys
 import json
 import os
@@ -645,11 +646,18 @@ class DockerManager(object):
 
         self.docker_py_versioninfo = get_docker_py_versioninfo()
 
+    def _api_version(self):
+        version = self.client.version()
+        if 'ApiVersion' in version:
+            return version['ApiVersion']
+        else:
+            return version['APIVersion']
+
     def _check_capabilities(self):
         """
         Create a list of available capabilities
         """
-        api_version = self.client.version()['ApiVersion']
+        api_version = self._api_version()
         for cap, req_vers in self._cap_ver_req.items():
             if (self.docker_py_versioninfo >= req_vers[0] and
                     docker.utils.compare_version(req_vers[1], api_version) >= 0):
@@ -674,7 +682,7 @@ class DockerManager(object):
         if not fail:
             return False
 
-        api_version = self.client.version()['ApiVersion']
+        api_version = self._api_version()
         self.module.fail_json(msg='Specifying the `%s` parameter requires'
                 ' docker-py: %s, docker server apiversion %s; found'
                 ' docker-py: %s, server: %s' % (
@@ -919,7 +927,7 @@ class DockerManager(object):
             except ValueError as e:
                 self.module.fail_json(msg=str(e))
 
-            actual_mem = container['Config']['Memory']
+            actual_mem = [container['Config']['Memory'] if 'Memory' in container['Config'] else container['HostConfig']['Memory']]
 
             if expected_mem and actual_mem != expected_mem:
                 self.reload_reasons.append('memory ({0} => {1})'.format(actual_mem, expected_mem))
@@ -1144,7 +1152,7 @@ class DockerManager(object):
                 name_list = container.get('Names')
                 if name_list is None:
                     name_list = []
-                matches = name in name_list
+                matches = [("/%s" % full_name.split('/')[-1]) for full_name in name_list if full_name.endswith(name)]
             else:
                 details = self.client.inspect_container(container['Id'])
                 details = _docker_id_quirk(details)
@@ -1201,12 +1209,13 @@ class DockerManager(object):
                 # Image is already up to date. Don't increment the counter.
                 pass
             elif (status.startswith('Status: Downloaded newer image for') or
-                    status.startswith('Download complete')):
+                    status.startswith('Download complete') or
+                    status.endswith('downloaded')):
                 # Image was updated. Increment the pull counter.
                 self.increment_counter('pulled')
             else:
                 # Unrecognized status string.
-                self.module.fail_json(msg="Unrecognized status from pull, damnit!.", status=status, changes=changes)
+                self.module.fail_json(msg="Unrecognized status from pull.", status=status, changes=changes)
         except Exception as e:
             self.module.fail_json(msg="Failed to pull the specified image: %s" % resource, error=repr(e))
 

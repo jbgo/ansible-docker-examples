@@ -16,7 +16,14 @@
   copy: >
     content='DOCKER_OPTS="{{docker_opts}}"'
     dest=/etc/default/docker
-  notify: restart docker
+  # notify: restart docker
+  # TODO you may just want to always restart docker
+  # expecially because you need these options to take
+  # effect for later
+
+ # I can't use the service module because of an issue with ansible and upstart :(
+    # https://github.com/ansible/ansible-modules-core/issues/1170
+- command: service docker restart
 
 - name: allow users to run docker commands without sudo
   user: name={{item}} append=yes groups=docker

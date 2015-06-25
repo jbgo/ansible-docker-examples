@@ -7,7 +7,6 @@
     state: present
     name: postgres_data
     image: postgres
-    use_tls: encrypt
   environment: docker_env
 
 - name: install and run postgres
@@ -16,7 +15,6 @@
     name: "{{pg_container}}"
     image: postgres
     volumes_from: postgres_data
-    use_tls: encrypt
   environment: docker_env
   register: postgres_container
 

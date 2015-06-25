@@ -1,0 +1,8 @@
+docker_hub_repo: your_repo
+docker_hub_email: you@example.com
+
+# Override this value in group_vars/all/secrets
+docker_hub_auth: secret
+
+swarm_version: 0.2.0
+swarm_cluster_id: 61248e2478a6bbf39f30b954e9e00ad8

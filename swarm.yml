@@ -1,0 +1,36 @@
+# NOTE - after running this play, you can configure docker to connect to the swarm
+# manager with `export DOCKER_HOST=tcp://192.168.33.100:2376`. We are not using
+# TLS client authentication, so be sure to also `unset DOCKER_TLS_VERIFY`.
+---
+- name: install docker on all hosts
+  hosts: swarm
+  vars:
+    docker_users:
+      - vagrant
+    docker_opts: "-H=0.0.0.0:2375 -H=unix:///var/run/docker.sock"
+  roles:
+    - { role: docker, sudo: yes, tags: docker }
+
+- name: generate a swarm cluster ID and start the swarm manager
+  hosts: swarm-manager
+  gather_facts: False
+  vars:
+    docker_env:
+      DOCKER_HOST: "tcp://127.0.0.1:2375"
+  roles:
+    - { role: swarm-manager, tags: [swarm, swarm-manager] }
+
+- name: start swarm agents on all hosts
+  hosts: swarm
+  gather_facts: False
+  vars:
+    docker_env:
+      DOCKER_HOST: "tcp://127.0.0.1:2375"
+  vars_files:
+    # If this is the first time running the play, only the swarm-manager
+    # host knows about the swarm_cluster_id unless we explicitly declare
+    # this. I should probably figure out a way to do this with dynamic
+    # inventory instead of modifying a file ansible thinks is static.
+    - group_vars/all/config
+  roles:
+    - { role: swarm-agents, tags: [swarm, swarm-agents] }

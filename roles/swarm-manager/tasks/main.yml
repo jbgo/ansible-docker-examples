@@ -1,0 +1,12 @@
+- debug: var=swarm_cluster_id
+
+- name: start the swarm manager
+  docker:
+    name: swarm_manager
+    image: swarm:{{swarm_version}}
+    state: reloaded
+    ports:
+      - "{{swarm_manager_port}}:2375"
+    command: manage token://{{swarm_cluster_id}}
+    use_tls: "no"
+    docker_url: "tcp://127.0.0.1:2375"

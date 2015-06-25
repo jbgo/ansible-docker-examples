@@ -1,0 +1,17 @@
+- name: create a swarm cluster ID 
+  command: docker run --rm swarm:{{swarm_version}} create
+  environment: docker_env
+  register: swarm_create
+  when: swarm_cluster_id is not defined
+
+- set_fact:
+    swarm_cluster_id: "{{swarm_create.stdout}}"
+  when: swarm_cluster_id is not defined
+
+- name: save cluster ID
+  local_action:
+    module: lineinfile
+    state: present
+    dest: ./group_vars/all/config
+    regexp: "^swarm_cluster_id:"
+    line: "swarm_cluster_id: {{swarm_cluster_id}}"

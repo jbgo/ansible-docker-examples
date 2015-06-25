@@ -1,10 +1,26 @@
 [docker]
 192.168.33.100 ansible_ssh_user=vagrant
 
+[swarm-manager]
+192.168.33.100
+
+[swarm-manager:vars]
+ansible_ssh_user=vagrant
+
 [swarm]
 192.168.33.100
 192.168.33.101
 192.168.33.102
+192.168.33.103
 
 [swarm:vars]
 ansible_ssh_user=vagrant
+
+[nginx-green]
+192.168.33.101
+
+[nginx-blue]
+192.168.33.102
+
+[postgres]
+192.168.33.103

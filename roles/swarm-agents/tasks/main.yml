@@ -1,0 +1,7 @@
+- name: start the swarm agent
+  docker:
+    name: swarm_agent
+    image: swarm:{{swarm_version}}
+    state: reloaded
+    command: join --addr={{inventory_hostname}}:2375 token://{{swarm_cluster_id}}
+  environment: docker_env

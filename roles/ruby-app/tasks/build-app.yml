@@ -1,0 +1,42 @@
+- name: check for the current standby environment
+  set_fact:
+    standby_environment: "{{standby_environment|default('blue')}}"
+
+- name: switch to new standby environment
+  set_fact:
+    live_environment: "{{ 'green' if standby_environment == 'blue' else 'blue' }}"
+    standby_environment: "{{ 'blue' if standby_environment == 'blue' else 'green' }}"
+
+- name: set image_tag fact
+  set_fact:
+    image_tag: "{{docker_hub_repo}}/{{app_name}}:{{standby_environment}}"
+
+- name: copy app src to build server
+  synchronize: src={{app_src_path}} dest=/tmp
+
+- name: generate the dockerfile
+  template: src=Dockerfile.j2 dest=/tmp/{{app_src_path|basename}}/Dockerfile
+
+# The docker_image module is deprecated, so I'm using the docker build command directly.
+- name: build image
+  command: 'docker build -t {{image_tag}} /tmp/{{app_src_path|basename}}'
+  environment: docker_build_env
+
+# I'm not using the docker module here because ansible doesn't fail when the container exits
+# with a non-zero exit status.
+- name: run DB migrations
+  command: "docker run --rm
+    --link={{app_docker_links|join(' --link=')}} 
+    -e DB_NAME={{pg_database}} -e DB_USER={{pg_user}} -e DB_PASS={{pg_password}}
+    {{image_tag}} rake db:migrate"
+  environment: docker_env
+
+- name: create docker config directory
+  file: dest=/home/{{ansible_ssh_user}}/.docker state=directory
+
+- name: add docker hub auth credentials
+  template: src=docker-config.json.j2 dest=/home/{{ansible_ssh_user}}/.docker/config.json
+
+- name: push image to docker registry
+  command: "docker push {{image_tag}}"
+  environment: docker_env

@@ -1,0 +1,25 @@
+- name: shutdown containers running in standby environment
+  docker:
+    image: "{{image_tag}}"
+    state: stopped
+  environment: docker_swarm_env
+
+# - name: start new containers in standby environment
+#   docker:
+#     name: "{{app_container}}_{{standby_environment}}_{{item}}"
+#     image: "{{image_tag}}"
+#     state: restarted
+#     publish_all_ports: yes
+#     links: "{{app_docker_links}}"
+#     env:
+#       DB_NAME: "{{pg_database}}"
+#       DB_USER: "{{pg_user}}"
+#       DB_PASS: "{{pg_password}}"
+#   environment: docker_swarm_env
+#   with_sequence: count={{app_instances}}
+  # NOTE - I tried using the count option for the docker module, but it's mutually
+  # exclusive with the name option. I think it would be better if you could specify
+  # both and this module would use the name as a prefix, just like docker compose
+  # does. By using with_sequence, I can simulate this, but I have to add an extra
+  # task to stop containers if I want to scale down. That's manual work that I would
+  # prefer not to do.
